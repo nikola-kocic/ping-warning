@@ -23,7 +23,7 @@ class Ping : public QObject
 public :
     Ping(QObject *parent = 0) {}
     void run(const QString &hostname = "www.google.com");
-    Packet ping;
+    Packet packetData;
 
 signals:
     void finished();

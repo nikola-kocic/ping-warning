@@ -26,14 +26,14 @@ MainWindow::~MainWindow()
 void MainWindow::threadDone()
 {
     if(qMyApp->pingActive == true) {
-        if(ping->ping.ErrorValue == 0)
+        if(ping->packetData.ErrorValue == 0)
         {
-            QString pingInfo = "Time: " + ping->ping.Time.toString(Qt::SystemLocaleShortDate) +
-                    ", Host: " + ping->ping.Host +
-                    ", Ping: " + QString::number(ping->ping.PingTime);
+            QString pingInfo = "Time: " + ping->packetData.Time.toString(Qt::SystemLocaleShortDate) +
+                    ", Host: " + ping->packetData.Host +
+                    ", Ping: " + QString::number(ping->packetData.PingTime);
 
             ui->plainTextEditPing->appendPlainText(pingInfo);
-            if(ping->ping.PingTime > limit)
+            if(ping->packetData.PingTime > limit)
             {
                 this->alert();
                 ui->plainTextEditTimeouts->appendPlainText(pingInfo);
@@ -43,7 +43,7 @@ void MainWindow::threadDone()
         else
         {
             this->alert();
-            QString pingInfo = ping->ping.Time.toString(Qt::SystemLocaleShortDate) + ", " + ping->ping.Message;
+            QString pingInfo = ping->packetData.Time.toString(Qt::SystemLocaleShortDate) + ", " + ping->packetData.Message;
 
             ui->plainTextEditTimeouts->appendPlainText(pingInfo);
             ui->plainTextEditPing->appendPlainText(pingInfo);
