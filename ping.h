@@ -5,7 +5,6 @@
 #include "icmpdefs.h"
 #include <QString>
 #include <QDateTime>
-#include <QThread>
 
 class Packet
 {
@@ -17,18 +16,17 @@ public:
     QDateTime Time;
 };
 
-class PingThread : public QThread
+class Ping : public QObject
 {
     Q_OBJECT
 
 public :
-    PingThread(QObject *parent = 0, QString host = "www.google.com");
-    ~PingThread();
-    void run();
+    Ping(QObject *parent = 0) {}
+    void run(const QString &hostname = "www.google.com");
     Packet ping;
 
-private:
-    QString hostname;
+signals:
+    void finished();
 };
 
 #endif // THREAD_H

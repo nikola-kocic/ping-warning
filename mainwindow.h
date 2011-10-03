@@ -1,11 +1,12 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "thread.h"
+#include "ping.h"
 #include "myapp.h"
 
 #include <QMainWindow>
 #include <QtCore/QTimer>
+#include <QThread>
 
 namespace Ui {
     class MainWindow;
@@ -18,7 +19,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    PingThread *thread;
+    Ping *ping;
 
 private slots:
     void on_pushButtonStart_clicked();
@@ -31,6 +32,7 @@ private:
     QTimer *timer;
     unsigned limit;
     QString host;
+    QThread *thread;
 
 public slots:
     void closeEvent(QCloseEvent *event);

@@ -10,6 +10,11 @@ MainWindow::MainWindow(QWidget *parent) :
     qMyApp->pingActive = false;
     ui->setupUi(this);
     timer = new QTimer(this);
+    thread = new QThread();
+    ping = new Ping(this);
+    ping->moveToThread(thread);
+    connect(ping, SIGNAL(finished()), this, SLOT(threadDone()));
+
     connect(timer, SIGNAL(timeout()), this, SLOT(onTimer()));
 }
 
@@ -21,29 +26,29 @@ MainWindow::~MainWindow()
 void MainWindow::threadDone()
 {
     if(qMyApp->pingActive == true) {
-        if(thread->ping.ErrorValue == 0)
+        if(ping->ping.ErrorValue == 0)
         {
-            QString ping = "Time: " + thread->ping.Time.toString(Qt::SystemLocaleShortDate) +
-                    ", Host: " + thread->ping.Host +
-                    ", Ping: " + QString::number(thread->ping.PingTime);
+            QString pingInfo = "Time: " + ping->ping.Time.toString(Qt::SystemLocaleShortDate) +
+                    ", Host: " + ping->ping.Host +
+                    ", Ping: " + QString::number(ping->ping.PingTime);
 
-            ui->plainTextEditPing->appendPlainText(ping);
-            if(thread->ping.PingTime > limit)
+            ui->plainTextEditPing->appendPlainText(pingInfo);
+            if(ping->ping.PingTime > limit)
             {
                 this->alert();
-                ui->plainTextEditTimeouts->appendPlainText(ping);
-                Log(ping);
+                ui->plainTextEditTimeouts->appendPlainText(pingInfo);
+                Log(pingInfo);
             }
         }
         else
         {
             this->alert();
-            QString ping = thread->ping.Time.toString(Qt::SystemLocaleShortDate) + ", " + thread->ping.Message;
+            QString pingInfo = ping->ping.Time.toString(Qt::SystemLocaleShortDate) + ", " + ping->ping.Message;
 
-            ui->plainTextEditTimeouts->appendPlainText(ping);
-            ui->plainTextEditPing->appendPlainText(ping);
+            ui->plainTextEditTimeouts->appendPlainText(pingInfo);
+            ui->plainTextEditPing->appendPlainText(pingInfo);
 
-            Log(ping);
+            Log(pingInfo);
         }
         timer->start(TIMER_INTERVAL);
     }
@@ -86,9 +91,9 @@ void MainWindow::onTimer()
 {
     timer->stop();
 
-    thread = new PingThread(this, this->host);
-    connect(thread, SIGNAL(finished()), this, SLOT(threadDone()));
-    thread->start();
+    ping->run(this->host);
+
+
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

@@ -12,13 +12,17 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    thread.cpp \
-    myapp.cpp
+    myapp.cpp \
+    ping.cpp
 
 HEADERS  += mainwindow.h \
     icmpdefs.h \
-    thread.h \
-    myapp.h
+    myapp.h \
+    ping.h
 
 FORMS    += mainwindow.ui
 LIBS += -lws2_32
+
+
+
+
