@@ -21,12 +21,16 @@ class Ping : public QObject
     Q_OBJECT
 
 public :
-    Ping(QObject *parent = 0) {}
-    void run(const QString &hostname = "www.google.com");
-    Packet packetData;
+    Ping(QObject *parent = 0, const QString& host = "www.google.com");
+
+private:
+    QString hostname;
+
+public slots:
+    void run();
 
 signals:
-    void finished();
+    void finished(Packet);
 };
 
 #endif // THREAD_H

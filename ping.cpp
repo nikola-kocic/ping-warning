@@ -1,11 +1,19 @@
 #include "ping.h"
 
-void Ping::run(const QString &hostname)
+Ping::Ping(QObject *parent, const QString& host) : QObject(parent) {
+    this->hostname = host;
+}
+
+
+void Ping::run()
 {
 
+    qWarning("ping::run");
+    Packet packetData;
     for(unsigned int i=0; i< 1000000000; i++) { }
-    this->packetData.ErrorValue = 0;
-    this->packetData.Time = QDateTime::currentDateTime();
+    packetData.ErrorValue = 0;
+    packetData.Time = QDateTime::currentDateTime();
+
 
     WSAData wsaData;
     if (WSAStartup(MAKEWORD(1, 1), &wsaData) == 0)
@@ -13,18 +21,18 @@ void Ping::run(const QString &hostname)
         // Load the ICMP.DLL
         HINSTANCE hIcmp = LoadLibraryA("ICMP.DLL");
         if (hIcmp == 0) {
-            this->packetData.Message = "Unable to locate ICMP.DLL!";
-            this->packetData.ErrorValue = 2;
-            emit finished();
+            packetData.Message = "Unable to locate ICMP.DLL!";
+            packetData.ErrorValue = 2;
+            emit finished(packetData);
             return;
         }
 
         // Look up an IP address for the given host name
         struct hostent* phe;
         if ((phe = gethostbyname(hostname.toLocal8Bit().data())) == 0) {
-            this->packetData.Message = "Could not find IP address for " + hostname;
-            this->packetData.ErrorValue = 3;
-            emit finished();
+            packetData.Message = "Could not find IP address for " + hostname;
+            packetData.ErrorValue = 3;
+            emit finished(packetData);
             return;
         }
 
@@ -44,18 +52,18 @@ void Ping::run(const QString &hostname)
                                                        "IcmpSendEcho");
         if ((pIcmpCreateFile == 0) || (pIcmpCloseHandle == 0) ||
                 (pIcmpSendEcho == 0)) {
-            this->packetData.Message = "Failed to get proc addr for function.";
-            this->packetData.ErrorValue = 4;
-            emit finished();
+            packetData.Message = "Failed to get proc addr for function.";
+            packetData.ErrorValue = 4;
+            emit finished(packetData);
             return;
         }
 
         // Open the ping service
         HANDLE hIP = pIcmpCreateFile();
         if (hIP == INVALID_HANDLE_VALUE) {
-            this->packetData.Message = "Unable to open ping service.";
-            this->packetData.ErrorValue = 5;
-            emit finished();
+            packetData.Message = "Unable to open ping service.";
+            packetData.ErrorValue = 5;
+            emit finished(packetData);
             return;
         }
 
@@ -67,9 +75,9 @@ void Ping::run(const QString &hostname)
                     sizeof(IP_ECHO_REPLY) + sizeof(acPingBuffer));
 
         if (pIpe == 0) {
-            this->packetData.Message = "Failed to allocate global ping packet buffer.";
-            this->packetData.ErrorValue = 6;
-            emit finished();
+            packetData.Message = "Failed to allocate global ping packet buffer.";
+            packetData.ErrorValue = 6;
+            emit finished(packetData);
             return;
         }
         pIpe->Data = acPingBuffer;
@@ -80,16 +88,16 @@ void Ping::run(const QString &hostname)
                                        acPingBuffer, sizeof(acPingBuffer), NULL, pIpe,
                                        sizeof(IP_ECHO_REPLY) + sizeof(acPingBuffer), 5000);
         if (dwStatus != 0) {
-            this->packetData.Host = QString::number(int(LOBYTE(LOWORD(pIpe->Address)))) + "." +
+            packetData.Host = QString::number(int(LOBYTE(LOWORD(pIpe->Address)))) + "." +
                     QString::number(int(HIBYTE(LOWORD(pIpe->Address)))) + "." +
                     QString::number(int(LOBYTE(HIWORD(pIpe->Address)))) + "." +
                     QString::number(int(HIBYTE(HIWORD(pIpe->Address))));
-            this->packetData.PingTime = pIpe->RoundTripTime;
+            packetData.PingTime = pIpe->RoundTripTime;
 
         }
         else {
-            this->packetData.Message = "Error obtaining info from ping packet.";
-            this->packetData.ErrorValue = 1;
+            packetData.Message = "Error obtaining info from ping packet.";
+            packetData.ErrorValue = 1;
         }
 
         // Shut down...
@@ -99,10 +107,10 @@ void Ping::run(const QString &hostname)
     }
     else
     {
-        this->packetData.ErrorValue = 7;
+        packetData.ErrorValue = 7;
     }
 
-    emit finished();
+    emit finished(packetData);
     return;
 }
 

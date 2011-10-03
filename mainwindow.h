@@ -25,7 +25,7 @@ private slots:
     void on_pushButtonStart_clicked();
     void onTimer();
     void alert();
-    void threadDone();
+    void threadDone(Packet);
 
 private:
     Ui::MainWindow *ui;
