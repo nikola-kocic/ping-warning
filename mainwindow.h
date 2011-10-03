@@ -32,7 +32,7 @@ private:
     QTimer *timer;
     unsigned limit;
     QString host;
-    QThread *thread;
+    QThread *pingThread;
 
 public slots:
     void closeEvent(QCloseEvent *event);

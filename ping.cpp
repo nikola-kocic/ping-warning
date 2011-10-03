@@ -1,19 +1,14 @@
 #include "ping.h"
 
-Ping::Ping(QObject *parent, const QString& host) : QObject(parent) {
+Ping::Ping(const QString& host, QObject *parent) : QObject(parent) {
     this->hostname = host;
 }
 
-
 void Ping::run()
 {
-
-    qWarning("ping::run");
     Packet packetData;
-    for(unsigned int i=0; i< 1000000000; i++) { }
     packetData.ErrorValue = 0;
     packetData.Time = QDateTime::currentDateTime();
-
 
     WSAData wsaData;
     if (WSAStartup(MAKEWORD(1, 1), &wsaData) == 0)
