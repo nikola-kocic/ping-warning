@@ -1,24 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-
-#define TIMER_INTERVAL 1000
+#include <QtConcurrentRun>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , m_ping(new Ping())
     , m_timer_ping(new QTimer(this))
     , m_limit_ms(100)
     , m_host_name("")
-    , m_thread_ping(new QThread())
+    , m_watcher_ping(new QFutureWatcher<Packet>(this))
     , m_flag_ping_active(false)
 {
-    qRegisterMetaType<Packet>("Packet");
     ui->setupUi(this);
-
-    m_ping->moveToThread(m_thread_ping);
-    connect(m_thread_ping, SIGNAL(started()), m_ping, SLOT(run()));
-    connect(m_ping, SIGNAL(finished(Packet)), this, SLOT(threadDone(Packet)));
+    connect(m_watcher_ping, SIGNAL(resultReadyAt(int)), this, SLOT(pingFinished(int)));
     connect(m_timer_ping, SIGNAL(timeout()), this, SLOT(onTimer()));
     connect(qApp, SIGNAL(commitDataRequest(QSessionManager&)), this, SLOT(onCommitData(QSessionManager&)), Qt::DirectConnection);
 }
@@ -35,9 +29,8 @@ void MainWindow::on_pushButtonStart_clicked()
     if (m_flag_ping_active == false)
     {
         m_limit_ms = (unsigned)ui->spinBoxPingLimit->value();
-        m_host_name =  ui->lineEditHost->text();
+        m_host_name = ui->lineEditHost->text();
 
-        m_ping->setHostName(m_host_name);
         m_flag_ping_active = true;
         m_timer_ping->start(TIMER_INTERVAL);
         ui->pushButtonStart->setText("Stop");
@@ -66,19 +59,18 @@ void MainWindow::on_pushButtonStart_clicked()
 void MainWindow::onTimer()
 {
     m_timer_ping->stop();
-    m_thread_ping->start();
+    m_watcher_ping->setFuture(QtConcurrent::run(Ping::pingHost, m_host_name));
 }
 
-
-void MainWindow::threadDone(Packet p)
+void MainWindow::pingFinished(int i)
 {
-    m_thread_ping->exit();
-    if (m_flag_ping_active == true) {
+    Packet p = m_watcher_ping->resultAt(i);
+    if (m_flag_ping_active == true)
+    {
         if (p.ErrorValue == 0)
         {
-            QString pingInfo = "Time: " + p.Time.toString(Qt::SystemLocaleShortDate) +
-                    ", Host: " + p.Host +
-                    ", Ping: " + QString::number(p.PingTime);
+            QString pingInfo = p.Time.toString(Qt::SystemLocaleShortDate) + ", "
+                    + p.Host + ", " + QString::number(p.PingTime);
 
             ui->plainTextEditPing->appendPlainText(pingInfo);
             if (p.PingTime > m_limit_ms)
@@ -111,23 +103,26 @@ void MainWindow::alert()
     }
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::cleanup()
 {
     if (m_flag_ping_active == true)
     {
         m_flag_ping_active = false;
         m_timer_ping->stop();
-        m_thread_ping->exit();
         Log("*** " + QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate) + ", Logging Stopped ***\n");
     }
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    Q_UNUSED(event);
+    cleanup();
+}
+
 void MainWindow::onCommitData(QSessionManager &sm)
 {
-    if (m_flag_ping_active == true)
-    {
-        Log("*** " + QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate) + ", Logging Stopped ***\n\n");
-    }
+    Q_UNUSED(sm);
+    cleanup();
 }
 
 void MainWindow::Log(QString text)

@@ -4,9 +4,9 @@
 #include "ping.h"
 
 #include <QMainWindow>
-#include <QtCore/QTimer>
-#include <QThread>
+#include <QTimer>
 #include <QSessionManager>
+#include <QFutureWatcher>
 
 namespace Ui {
     class MainWindow;
@@ -21,20 +21,21 @@ public:
     ~MainWindow();
 
 private slots:
+    void pingFinished(int i);
     void onCommitData(QSessionManager &sm);
     void on_pushButtonStart_clicked();
     void onTimer();
     void alert();
-    void threadDone(Packet);
 
 private:
     void Log(QString text);
+    void cleanup();
     Ui::MainWindow *ui;
-    Ping *m_ping;
+    static const int TIMER_INTERVAL = 1000;
     QTimer *m_timer_ping;
     unsigned m_limit_ms;
     QString m_host_name;
-    QThread *m_thread_ping;
+    QFutureWatcher<Packet> *m_watcher_ping;
     bool m_flag_ping_active;
 
 public slots:

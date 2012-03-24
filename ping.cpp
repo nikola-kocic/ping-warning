@@ -1,17 +1,6 @@
 #include "ping.h"
 
-Ping::Ping(QObject *parent)
-    : QObject(parent)
-    , m_hostname("www.google.com")
-{
-}
-
-void Ping::setHostName(const QString &hostname)
-{
-    m_hostname = hostname;
-}
-
-void Ping::run()
+Packet Ping::pingHost(const QString &hostname)
 {
     Packet packetData;
     packetData.ErrorValue = 0;
@@ -26,18 +15,16 @@ void Ping::run()
         {
             packetData.Message = "Unable to locate ICMP.DLL!";
             packetData.ErrorValue = 2;
-            emit finished(packetData);
-            return;
+            return packetData;
         }
 
         // Look up an IP address for the given host name
         struct hostent* phe;
-        if ((phe = gethostbyname(m_hostname.toLocal8Bit().data())) == 0)
+        if ((phe = gethostbyname(hostname.toLocal8Bit().data())) == 0)
         {
-            packetData.Message = "Could not find IP address for " + m_hostname;
+            packetData.Message = "Could not find IP address for " + hostname;
             packetData.ErrorValue = 3;
-            emit finished(packetData);
-            return;
+            return packetData;
         }
 
         // Get handles to the functions inside ICMP.DLL that we'll need
@@ -55,8 +42,7 @@ void Ping::run()
         {
             packetData.Message = "Failed to get proc addr for function.";
             packetData.ErrorValue = 4;
-            emit finished(packetData);
-            return;
+            return packetData;
         }
 
         // Open the ping service
@@ -65,8 +51,7 @@ void Ping::run()
         {
             packetData.Message = "Unable to open ping service.";
             packetData.ErrorValue = 5;
-            emit finished(packetData);
-            return;
+            return packetData;
         }
 
         // Build ping packet
@@ -80,8 +65,7 @@ void Ping::run()
         {
             packetData.Message = "Failed to allocate global ping packet buffer.";
             packetData.ErrorValue = 6;
-            emit finished(packetData);
-            return;
+            return packetData;
         }
         pIpe->Data = acPingBuffer;
         pIpe->DataSize = sizeof(acPingBuffer);
@@ -115,7 +99,6 @@ void Ping::run()
         packetData.ErrorValue = 7;
     }
 
-    emit finished(packetData);
-    return;
+    return packetData;
 }
 

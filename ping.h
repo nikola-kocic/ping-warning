@@ -1,14 +1,12 @@
 #ifndef THREAD_H
-
 #define THREAD_H
 
 #include "icmpdefs.h"
 #include <QString>
 #include <QDateTime>
 
-class Packet
+struct Packet
 {
-public:
     QString Message;
     unsigned ErrorValue;
     unsigned long PingTime;
@@ -16,22 +14,10 @@ public:
     QDateTime Time;
 };
 
-class Ping : public QObject
+class Ping
 {
-    Q_OBJECT
-
-public :
-    explicit Ping(QObject *parent = 0);
-    void setHostName(const QString &hostname);
-
-private:
-    QString m_hostname;
-
-public slots:
-    void run();
-
-signals:
-    void finished(Packet);
+public:
+    static Packet pingHost(const QString &hostname);
 };
 
 #endif // THREAD_H
