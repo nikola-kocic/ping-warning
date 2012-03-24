@@ -6,7 +6,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , m_ping(0)
+    , m_ping(new Ping())
     , m_timer_ping(new QTimer(this))
     , m_limit_ms(100)
     , m_host_name("")
@@ -16,6 +16,9 @@ MainWindow::MainWindow(QWidget *parent)
     qRegisterMetaType<Packet>("Packet");
     ui->setupUi(this);
 
+    m_ping->moveToThread(m_thread_ping);
+    connect(m_thread_ping, SIGNAL(started()), m_ping, SLOT(run()));
+    connect(m_ping, SIGNAL(finished(Packet)), this, SLOT(threadDone(Packet)));
     connect(m_timer_ping, SIGNAL(timeout()), this, SLOT(onTimer()));
     connect(qApp, SIGNAL(commitDataRequest(QSessionManager&)), this, SLOT(onCommitData(QSessionManager&)), Qt::DirectConnection);
 }
@@ -24,6 +27,7 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
+
 void MainWindow::on_pushButtonStart_clicked()
 {
     QString pingInfo = "*** " + QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate) + ", Logging ";
@@ -33,13 +37,7 @@ void MainWindow::on_pushButtonStart_clicked()
         m_limit_ms = (unsigned)ui->spinBoxPingLimit->value();
         m_host_name =  ui->lineEditHost->text();
 
-
-        m_ping = new Ping(this->m_host_name);
-        m_ping->moveToThread(m_thread_ping);
-        connect(m_thread_ping, SIGNAL(started()), m_ping, SLOT(run()));
-        connect(m_ping, SIGNAL(finished(Packet)), this, SLOT(threadDone(Packet)));
-
-
+        m_ping->setHostName(m_host_name);
         m_flag_ping_active = true;
         m_timer_ping->start(TIMER_INTERVAL);
         ui->pushButtonStart->setText("Stop");
@@ -55,8 +53,6 @@ void MainWindow::on_pushButtonStart_clicked()
         ui->lineEditHost->setEnabled(true);
         ui->spinBoxPingLimit->setEnabled(true);
         pingInfo += "Stopped ***\n";
-        m_ping->disconnect();
-        delete m_ping;
     }
 
     ui->plainTextEditTimeouts->appendPlainText(pingInfo);

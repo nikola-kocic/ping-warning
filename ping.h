@@ -21,7 +21,8 @@ class Ping : public QObject
     Q_OBJECT
 
 public :
-    Ping(const QString& host = "www.google.com", QObject *parent = 0);
+    explicit Ping(QObject *parent = 0);
+    void setHostName(const QString &hostname);
 
 private:
     QString m_hostname;
@@ -34,4 +35,3 @@ signals:
 };
 
 #endif // THREAD_H
-

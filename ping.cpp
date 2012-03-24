@@ -1,9 +1,14 @@
 #include "ping.h"
 
-Ping::Ping(const QString& host, QObject *parent)
+Ping::Ping(QObject *parent)
     : QObject(parent)
-    , m_hostname(host)
+    , m_hostname("www.google.com")
 {
+}
+
+void Ping::setHostName(const QString &hostname)
+{
+    m_hostname = hostname;
 }
 
 void Ping::run()
