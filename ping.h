@@ -24,7 +24,7 @@ public :
     Ping(const QString& host = "www.google.com", QObject *parent = 0);
 
 private:
-    QString hostname;
+    QString m_hostname;
 
 public slots:
     void run();

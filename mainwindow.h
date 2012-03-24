@@ -30,11 +30,11 @@ private slots:
 private:
     void Log(QString text);
     Ui::MainWindow *ui;
-    Ping *ping;
-    QTimer *timer;
-    unsigned limit;
-    QString host;
-    QThread *pingThread;
+    Ping *m_ping;
+    QTimer *m_timer_ping;
+    unsigned m_limit_ms;
+    QString m_host_name;
+    QThread *m_thread_ping;
     bool m_flag_ping_active;
 
 public slots:

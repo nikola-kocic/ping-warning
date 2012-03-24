@@ -1,7 +1,9 @@
 #include "ping.h"
 
-Ping::Ping(const QString& host, QObject *parent) : QObject(parent) {
-    this->hostname = host;
+Ping::Ping(const QString& host, QObject *parent)
+    : QObject(parent)
+    , m_hostname(host)
+{
 }
 
 void Ping::run()
@@ -15,7 +17,8 @@ void Ping::run()
     {
         // Load the ICMP.DLL
         HINSTANCE hIcmp = LoadLibraryA("ICMP.DLL");
-        if (hIcmp == 0) {
+        if (hIcmp == 0)
+        {
             packetData.Message = "Unable to locate ICMP.DLL!";
             packetData.ErrorValue = 2;
             emit finished(packetData);
@@ -24,8 +27,9 @@ void Ping::run()
 
         // Look up an IP address for the given host name
         struct hostent* phe;
-        if ((phe = gethostbyname(hostname.toLocal8Bit().data())) == 0) {
-            packetData.Message = "Could not find IP address for " + hostname;
+        if ((phe = gethostbyname(m_hostname.toLocal8Bit().data())) == 0)
+        {
+            packetData.Message = "Could not find IP address for " + m_hostname;
             packetData.ErrorValue = 3;
             emit finished(packetData);
             return;
@@ -39,14 +43,11 @@ void Ping::run()
         pfnHV pIcmpCreateFile;
         pfnBH pIcmpCloseHandle;
         pfnDHDPWPipPDD pIcmpSendEcho;
-        pIcmpCreateFile = (pfnHV)GetProcAddress(hIcmp,
-                                                "IcmpCreateFile");
-        pIcmpCloseHandle = (pfnBH)GetProcAddress(hIcmp,
-                                                 "IcmpCloseHandle");
-        pIcmpSendEcho = (pfnDHDPWPipPDD)GetProcAddress(hIcmp,
-                                                       "IcmpSendEcho");
-        if ((pIcmpCreateFile == 0) || (pIcmpCloseHandle == 0) ||
-                (pIcmpSendEcho == 0)) {
+        pIcmpCreateFile = (pfnHV)GetProcAddress(hIcmp, "IcmpCreateFile");
+        pIcmpCloseHandle = (pfnBH)GetProcAddress(hIcmp, "IcmpCloseHandle");
+        pIcmpSendEcho = (pfnDHDPWPipPDD)GetProcAddress(hIcmp, "IcmpSendEcho");
+        if ((pIcmpCreateFile == 0) || (pIcmpCloseHandle == 0) || (pIcmpSendEcho == 0))
+        {
             packetData.Message = "Failed to get proc addr for function.";
             packetData.ErrorValue = 4;
             emit finished(packetData);
@@ -55,7 +56,8 @@ void Ping::run()
 
         // Open the ping service
         HANDLE hIP = pIcmpCreateFile();
-        if (hIP == INVALID_HANDLE_VALUE) {
+        if (hIP == INVALID_HANDLE_VALUE)
+        {
             packetData.Message = "Unable to open ping service.";
             packetData.ErrorValue = 5;
             emit finished(packetData);
@@ -69,7 +71,8 @@ void Ping::run()
                     GMEM_FIXED | GMEM_ZEROINIT,
                     sizeof(IP_ECHO_REPLY) + sizeof(acPingBuffer));
 
-        if (pIpe == 0) {
+        if (pIpe == 0)
+        {
             packetData.Message = "Failed to allocate global ping packet buffer.";
             packetData.ErrorValue = 6;
             emit finished(packetData);
@@ -82,7 +85,8 @@ void Ping::run()
         DWORD dwStatus = pIcmpSendEcho(hIP, *((DWORD*)phe->h_addr_list[0]),
                                        acPingBuffer, sizeof(acPingBuffer), NULL, pIpe,
                                        sizeof(IP_ECHO_REPLY) + sizeof(acPingBuffer), 5000);
-        if (dwStatus != 0) {
+        if (dwStatus != 0)
+        {
             packetData.Host = QString::number(int(LOBYTE(LOWORD(pIpe->Address)))) + "." +
                     QString::number(int(HIBYTE(LOWORD(pIpe->Address)))) + "." +
                     QString::number(int(LOBYTE(HIWORD(pIpe->Address)))) + "." +
@@ -90,7 +94,8 @@ void Ping::run()
             packetData.PingTime = pIpe->RoundTripTime;
 
         }
-        else {
+        else
+        {
             packetData.Message = "Error obtaining info from ping packet.";
             packetData.ErrorValue = 1;
         }
