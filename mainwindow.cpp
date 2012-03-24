@@ -3,17 +3,21 @@
 
 #define TIMER_INTERVAL 1000
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    , ping(0)
+    , timer(new QTimer(this))
+    , limit(100)
+    , host("")
+    , pingThread(new QThread())
+    , m_flag_ping_active(false)
 {
     qRegisterMetaType<Packet>("Packet");
-    qMyApp->pingActive = false;
     ui->setupUi(this);
-    timer = new QTimer(this);
-    pingThread = new QThread();
 
     connect(timer, SIGNAL(timeout()), this, SLOT(onTimer()));
+    connect(qApp, SIGNAL(commitDataRequest(QSessionManager&)), this, SLOT(onCommitData(QSessionManager&)), Qt::DirectConnection);
 }
 
 MainWindow::~MainWindow()
@@ -24,7 +28,7 @@ void MainWindow::on_pushButtonStart_clicked()
 {
     QString pingInfo = "*** " + QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate) + ", Logging ";
 
-    if(qMyApp->pingActive == false)
+    if(m_flag_ping_active == false)
     {
         limit = (unsigned)ui->spinBoxPingLimit->value();
         host =  ui->lineEditHost->text();
@@ -36,7 +40,7 @@ void MainWindow::on_pushButtonStart_clicked()
         connect(ping, SIGNAL(finished(Packet)), this, SLOT(threadDone(Packet)));
 
 
-        qMyApp->pingActive = true;
+        m_flag_ping_active = true;
         timer->start(TIMER_INTERVAL);
         ui->pushButtonStart->setText("Stop");
         ui->lineEditHost->setEnabled(false);
@@ -45,12 +49,14 @@ void MainWindow::on_pushButtonStart_clicked()
     }
     else
     {
-        qMyApp->pingActive = false;
+        m_flag_ping_active = false;
         timer->stop();
         ui->pushButtonStart->setText("Start");
         ui->lineEditHost->setEnabled(true);
         ui->spinBoxPingLimit->setEnabled(true);
         pingInfo += "Stopped ***\n";
+        ping->disconnect();
+        delete ping;
     }
 
     ui->plainTextEditTimeouts->appendPlainText(pingInfo);
@@ -71,7 +77,7 @@ void MainWindow::onTimer()
 void MainWindow::threadDone(Packet p)
 {
     pingThread->exit();
-    if(qMyApp->pingActive == true) {
+    if(m_flag_ping_active == true) {
         if(p.ErrorValue == 0)
         {
             QString pingInfo = "Time: " + p.Time.toString(Qt::SystemLocaleShortDate) +
@@ -111,11 +117,27 @@ void MainWindow::alert()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    if(qMyApp->pingActive == true)
+    if(m_flag_ping_active == true)
     {
-        qMyApp->pingActive = false;
+        m_flag_ping_active = false;
         timer->stop();
         pingThread->exit();
         Log("*** " + QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate) + ", Logging Stopped ***\n");
     }
+}
+
+void MainWindow::onCommitData(QSessionManager &sm)
+{
+    if(m_flag_ping_active == true)
+    {
+        Log("*** " + QDateTime::currentDateTime().toString(Qt::SystemLocaleShortDate) + ", Logging Stopped ***\n\n");
+    }
+}
+
+void MainWindow::Log(QString text)
+{
+    QFile log("ping.txt");
+    log.open(QIODevice::Append | QIODevice::Text);
+    log.write(text.toUtf8() + "\n");
+    log.close();
 }

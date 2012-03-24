@@ -12,12 +12,10 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    myapp.cpp \
     ping.cpp
 
 HEADERS  += mainwindow.h \
     icmpdefs.h \
-    myapp.h \
     ping.h
 
 FORMS    += mainwindow.ui
